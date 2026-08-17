@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>똥피하기 이벤트</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      background-color: #f0f2f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+    }
+    #app {
+      width: 100%;
+      max-width: 420px;
+      height: 100vh;
+      max-height: 840px;
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      justify-content: center;
+    }
+    .hidden { display: none !important; }
+
+    /* 1. 시작 화면 */
+    h2 { text-align: center; margin-bottom: 20px; color: #2c3e50; }
+    .input-group { margin-bottom: 15px; }
+    label { font-size: 14px; font-weight: bold; margin-bottom: 5px; display: block; }
+    input[type="tel"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+    }
+    .terms-box {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #666;
+      max-height: 140px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      font-size: 13px;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+    .checkbox-group input { margin-right: 8px; width: 18px; height: 18px; }
+    .btn-main {
+      width: 100%;
+      padding: 14px;
+      background: #ff4757;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-main:active { background: #e04050; }
+
+    /* 2. 게임 화면 */
+    #gameScreen { padding: 0; position: relative; background: #eef2f3; }
+    .status-bar {
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 10px;
+      background: #ffffff;
+      font-size: 15px;
+      font-weight: bold;
+      border-bottom: 1px solid #ddd;
+      z-index: 10;
+    }
+    #gameCanvas {
+      flex: 1;
+      width: 100%;
+      background: #fafafa;
+    }
+    .controller {
+      height: 100px;
+      display: flex;
+      background: #fff;
+      border-top: 1px solid #ddd;
+    }
+    .btn-ctrl {
+      flex: 1;
+      border: none;
+      background: #f1f2f6;
+      font-size: 28px;
+      font-weight: bold;
+      color: #2f3542;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .btn-ctrl:active { background: #dfe4ea; }
+    .btn-ctrl:first-child { border-right: 1px solid #ddd; }
+
+    /* 3. 모달 및 종료 화면 */
+    .overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+    .modal {
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      width: 80%;
+      text-align: center;
+    }
+    .modal h3 { margin-bottom: 10px; font-size: 20px; }
+    .modal p { margin-bottom: 20px; font-size: 15px; color: #555; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <!-- 1. 시작 및 정보 동의 화면 -->
+  <div id="startScreen" class="screen">
+    <h2>💩 똥피하기 챌린지</h2>
+    <div class="input-group">
+      <label for="phone">휴대폰 번호</label>
+      <input type="tel" id="phone" placeholder="010-1234-5678" maxlength="13">
+    </div>
+    
+    <label>[필수] 개인정보 수집·이용 동의</label>
+    <div class="terms-box">
+      이벤트 진행 및 당첨자 안내를 위한 기본 동의 항목입니다.<br><br>
+      • <b>수집·이용 목적:</b> 이벤트 응모 접수, 당첨자 추첨, 당첨 안내 및 경품 발송, 민원 응대<br>
+      • <b>수집 항목:</b> 휴대폰 번호<br>
+      • <b>보유 및 이용 기간:</b> 이벤트 종료 및 경품 지급 완료 후 즉시 파기<br>
+      • <b>동의 거부 권리 및 불이익:</b> 귀하는 개인정보 수집 및 이용 동의를 거부할 권리가 있으며, 동의 거부 시 이벤트 참여 및 경품 수령이 제한됩니다.
+    </div>
+
+    <label class="checkbox-group">
+      <input type="checkbox" id="agree"> 위 개인정보 수집 및 이용에 동의합니다.
+    </label>
+
+    <button class="btn-main" onclick="startEvent()">이벤트 참여하기 (총 5판)</button>
+  </div>
+
+  <!-- 2. 게임 화면 -->
+  <div id="gameScreen" class="screen hidden">
+    <div class="status-bar">
+      <span>남은 기회: <b id="uiAttempts">5</b>/5</span>
+      <span>이번 판: <b id="uiScore">0</b>점</span>
+      <span>시간: <b id="uiTime">0</b>초</span>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div class="controller">
+      <button class="btn-ctrl" id="btnLeft">◀</button>
+      <button class="btn-ctrl" id="btnRight">▶</button>
+    </div>
+  </div>
+
+  <!-- 팝업 모달 (라운드 종료 / 최종 결과) -->
+  <div id="modalOverlay" class="overlay hidden">
+    <div class="modal">
+      <h3 id="modalTitle">라운드 종료!</h3>
+      <p id="modalDesc">이번 판 점수: 0점</p>
+      <button class="btn-main" id="modalBtn">다음 판 도전</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ★ Google Apps Script 배포 URL ★
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLbXJ0eCG0J4lf0inaDXhyTxhx5XGHABZ0u7i2IbS12AE87tinCgLceLfUakvd9PzB/exec";
+
+  let userPhone = "";
+  let currentAttempt = 1;
+  const maxAttempts = 5;
+  let roundScores = []; // 각 판별 점수 기록
+
+  // 게임 상태 변수
+  let canvas, ctx;
+  let animationId;
+  let player = { x: 0, y: 0, width: 30, height: 30, speed: 4 };
+  let poops = [];
+  let score = 0;
+  let timeElapsed = 0;
+  let baseSpawnInterval = 200; // 초기 스폰 주기(ms)
+  let currentSpawnInterval = 200;
+  let lastSpawnTime = 0;
+  let gameStartTime = 0;
+  let isPlaying = false;
+  let moveLeft = false;
+  let moveRight = false;
+
+  // 1. 이벤트 시작 검증
+  function startEvent() {
+    const phoneInput = document.getElementById("phone").value.trim();
+    const agreeCheck = document.getElementById("agree").checked;
+
+    if (!/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/.test(phoneInput)) {
+      alert("올바른 휴대폰 번호를 입력해주세요.");
+      return;
+    }
+    if (!agreeCheck) {
+      alert("개인정보 수집 및 이용에 동의해야 참여할 수 있습니다.");
+      return;
+    }
+
+    userPhone = phoneInput;
+    roundScores = [];
+    currentAttempt = 1;
+
+    document.getElementById("startScreen").classList.add("hidden");
+    document.getElementById("gameScreen").classList.remove("hidden");
+
+    initCanvas();
+    setupControls();
+    startRound();
+  }
+
+  // 캔버스 초기화
+  function initCanvas() {
+    canvas = document.getElementById("gameCanvas");
+    ctx = canvas.getContext("2d");
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight - 150;
+    player.y = canvas.height - player.height - 10;
+  }
+
+  // 터치 컨트롤러 설정 (이탈 방지 처리 완료)
+  function setupControls() {
+    const btnL = document.getElementById("btnLeft");
+    const btnR = document.getElementById("btnRight");
+
+    const startL = (e) => { e.preventDefault(); moveLeft = true; };
+    const endL = (e) => { e.preventDefault(); moveLeft = false; };
+    const startR = (e) => { e.preventDefault(); moveRight = true; };
+    const endR = (e) => { e.preventDefault(); moveRight = false; };
+
+    btnL.addEventListener("touchstart", startL, { passive: false });
+    btnL.addEventListener("touchend", endL, { passive: false });
+    btnL.addEventListener("touchcancel", endL);
+    btnL.addEventListener("mousedown", startL);
+    btnL.addEventListener("mouseup", endL);
+    btnL.addEventListener("mouseleave", endL);
+
+    btnR.addEventListener("touchstart", startR, { passive: false });
+    btnR.addEventListener("touchend", endR, { passive: false });
+    btnR.addEventListener("touchcancel", endR);
+    btnR.addEventListener("mousedown", startR);
+    btnR.addEventListener("mouseup", endR);
+    btnR.addEventListener("mouseleave", endR);
+  }
+
+  // 라운드 시작
+  function startRound() {
+    moveLeft = false;
+    moveRight = false;
+
+    player.x = canvas.width / 2 - player.width / 2;
+    poops = [];
+    score = 0;
+    timeElapsed = 0;
+    currentSpawnInterval = baseSpawnInterval;
+    isPlaying = true;
+    gameStartTime = Date.now();
+    lastSpawnTime = Date.now();
+
+    document.getElementById("uiAttempts").innerText = (maxAttempts - currentAttempt + 1);
+    document.getElementById("uiScore").innerText = "0";
+    document.getElementById("uiTime").innerText = "0";
+
+    if (animationId) cancelAnimationFrame(animationId);
+    gameLoop();
+  }
+
+  // 게임 오버 처리 (단일 함수로 통합)
+  function gameOver() {
+    isPlaying = false;
+    moveLeft = false;
+    moveRight = false;
+    cancelAnimationFrame(animationId);
+
+    roundScores.push(score);
+    const maxScore = Math.max(...roundScores);
+
+    const modalOverlay = document.getElementById("modalOverlay");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalDesc = document.getElementById("modalDesc");
+    const modalBtn = document.getElementById("modalBtn");
+
+    if (currentAttempt < maxAttempts) {
+      modalTitle.innerText = `${currentAttempt}번째 판 종료!`;
+      modalDesc.innerHTML = `이번 판 점수: <b>${score}점</b><br>현재까지 최고 점수: <b>${maxScore}점</b>`;
+      modalBtn.style.display = "block";
+      modalBtn.innerText = "다음 판 도전";
+      modalBtn.onclick = () => {
+        modalOverlay.classList.add("hidden");
+        currentAttempt++;
+        startRound();
+      };
+    } else {
+      modalTitle.innerText = "🎉 5판 도전 완료!";
+      modalDesc.innerHTML = `최종 <b>최고 점수: ${maxScore}점</b><br>결과를 스프레드시트에 저장 중입니다...`;
+      modalBtn.style.display = "none";
+      sendDataToGoogleSheet(maxScore);
+    }
+    modalOverlay.classList.remove("hidden");
+  }
+
+  // 메인 게임 루프
+  function gameLoop() {
+    if (!isPlaying) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const now = Date.now();
+
+    // 1초당 5점 추가
+    const currentSec = Math.floor((now - gameStartTime) / 1000);
+    if (currentSec > timeElapsed) {
+      const addedSec = currentSec - timeElapsed;
+      timeElapsed = currentSec;
+      score += addedSec * 5;
+
+      // 5초마다 개체수 1.4배 증가 (최소 50ms까지 단축)
+      if (timeElapsed > 0 && timeElapsed % 5 === 0) {
+        currentSpawnInterval = Math.max(50, currentSpawnInterval / 1.4);
+      }
+      document.getElementById("uiScore").innerText = score;
+      document.getElementById("uiTime").innerText = timeElapsed;
+    }
+
+    // 플레이어 이동
+    if (moveLeft && player.x > 0) player.x -= player.speed;
+    if (moveRight && player.x < canvas.width - player.width) player.x += player.speed;
+
+    // 플레이어 그리기
+    ctx.font = "26px sans-serif";
+    ctx.fillText("🏃", player.x, player.y + 24);
+
+    // 똥 스폰
+    if (now - lastSpawnTime > currentSpawnInterval) {
+      poops.push({
+        x: Math.random() * (canvas.width - 24),
+        y: -20,
+        speed: 3.5 + Math.random() * 3,
+        size: 22
+      });
+      lastSpawnTime = now;
+    }
+
+    // 똥 이동 및 충돌 체크
+    for (let i = poops.length - 1; i >= 0; i--) {
+      let p = poops[i];
+      p.y += p.speed;
+
+      ctx.font = `${p.size}px sans-serif`;
+      ctx.fillText("💩", p.x, p.y + p.size);
+
+      // 바닥 도달 시 +1점
+      if (p.y > canvas.height) {
+        poops.splice(i, 1);
+        score += 1;
+        document.getElementById("uiScore").innerText = score;
+        continue;
+      }
+
+      // 충돌 판정
+      if (
+        player.x < p.x + p.size - 4 &&
+        player.x + player.width > p.x + 4 &&
+        player.y < p.y + p.size &&
+        player.y + player.height > p.y + 6
+      ) {
+        gameOver();
+        return;
+      }
+    }
+
+    animationId = requestAnimationFrame(gameLoop);
+  }
+
+  // 구글 스프레드시트로 최고 점수 전송
+  function sendDataToGoogleSheet(finalMaxScore) {
+    const modalDesc = document.getElementById("modalDesc");
+    const sendDate = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+
+    const payload = {
+      phone: userPhone,
+      score: finalMaxScore,
+      date: sendDate
+    };
+
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      modalDesc.innerHTML = `최종 <b>최고 점수: ${finalMaxScore}점</b><br><br><b>이벤트 응모가 완료되었습니다!</b>`;
+    })
+    .catch((err) => {
+      console.error(err);
+      modalDesc.innerHTML = `최종 <b>최고 점수: ${finalMaxScore}점</b><br><br>저장 중 오류가 발생했습니다.`;
+    });
+  }
+</script>
+</body>
+</html>
