@@ -93,6 +93,7 @@
     .status-bar {
       display: flex;
       justify-content: space-around;
+      align-items: center;
       padding: 12px 10px;
       background: #ffffff;
       font-size: 15px;
@@ -126,6 +127,16 @@
     .btn-ctrl:active { background: #dfe4ea; }
     .btn-ctrl:first-child { border-right: 1px solid #ddd; }
 
+    .btn-sound {
+      background: #2f3542;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
     /* 3. 모달 및 종료 화면 */
     .overlay {
       position: absolute;
@@ -150,6 +161,13 @@
 <body>
 
 <div id="app">
+  <!-- 🎵 배경음악 오디오 태그 (자동 반복) -->
+  <audio id="bgm" loop preload="auto">
+    <!-- 깃허브에 올린 bgm.mp3를 우선 연결하고, 없을 시 온라인 음원으로 자동 재생 -->
+    <source src="./bgm.mp3" type="audio/mp3">
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=game-music-loop-7-145285.mp3" type="audio/mp3">
+  </audio>
+
   <!-- 1. 시작 및 정보 동의 화면 -->
   <div id="startScreen" class="screen">
     <h2>💩 똥피하기 챌린지</h2>
@@ -177,9 +195,10 @@
   <!-- 2. 게임 화면 -->
   <div id="gameScreen" class="screen hidden">
     <div class="status-bar">
-      <span>남은 기회: <b id="uiAttempts">5</b>/5</span>
-      <span>이번 판: <b id="uiScore">0</b>점</span>
+      <span>기회: <b id="uiAttempts">5</b>/5</span>
+      <span>점수: <b id="uiScore">0</b></span>
       <span>시간: <b id="uiTime">0</b>초</span>
+      <button class="btn-sound" id="btnMute" onclick="toggleBgm()">🔊 BGM</button>
     </div>
     <canvas id="gameCanvas"></canvas>
     <div class="controller">
@@ -202,10 +221,11 @@
   // ★ Google Apps Script 배포 URL ★
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLbXJ0eCG0J4lf0inaDXhyTxhx5XGHABZ0u7i2IbS12AE87tinCgLceLfUakvd9PzB/exec";
 
+  const bgm = document.getElementById("bgm");
   let userPhone = "";
   let currentAttempt = 1;
   const maxAttempts = 5;
-  let roundScores = []; // 각 판별 점수 기록
+  let roundScores = [];
 
   // 게임 상태 변수
   let canvas, ctx;
@@ -214,13 +234,25 @@
   let poops = [];
   let score = 0;
   let timeElapsed = 0;
-  let baseSpawnInterval = 200; // 초기 스폰 주기(ms)
+  let baseSpawnInterval = 200;
   let currentSpawnInterval = 200;
   let lastSpawnTime = 0;
   let gameStartTime = 0;
   let isPlaying = false;
   let moveLeft = false;
   let moveRight = false;
+
+  // 🎵 음악 온/오프 토글 함수
+  function toggleBgm() {
+    const btn = document.getElementById("btnMute");
+    if (bgm.paused) {
+      bgm.play();
+      btn.innerText = "🔊 BGM";
+    } else {
+      bgm.pause();
+      btn.innerText = "🔇 Mute";
+    }
+  }
 
   // 1. 이벤트 시작 검증
   function startEvent() {
@@ -235,6 +267,9 @@
       alert("개인정보 수집 및 이용에 동의해야 참여할 수 있습니다.");
       return;
     }
+
+    // 🎵 모바일 정책상 사용자 클릭 시 BGM 재생 시작
+    bgm.play().catch(e => console.log("Audio play blocked:", e));
 
     userPhone = phoneInput;
     roundScores = [];
@@ -257,7 +292,7 @@
     player.y = canvas.height - player.height - 10;
   }
 
-  // 터치 컨트롤러 설정 (이탈 방지 처리 완료)
+  // 터치 컨트롤러 설정
   function setupControls() {
     const btnL = document.getElementById("btnLeft");
     const btnR = document.getElementById("btnRight");
@@ -304,7 +339,7 @@
     gameLoop();
   }
 
-  // 게임 오버 처리 (단일 함수로 통합)
+  // 게임 오버 처리
   function gameOver() {
     isPlaying = false;
     moveLeft = false;
@@ -330,6 +365,10 @@
         startRound();
       };
     } else {
+      // 🎵 5판 모두 완료 시 음악 정지
+      bgm.pause();
+      bgm.currentTime = 0;
+
       modalTitle.innerText = "🎉 5판 도전 완료!";
       modalDesc.innerHTML = `최종 <b>최고 점수: ${maxScore}점</b><br>결과를 스프레드시트에 저장 중입니다...`;
       modalBtn.style.display = "none";
@@ -352,7 +391,7 @@
       timeElapsed = currentSec;
       score += addedSec * 5;
 
-      // 5초마다 개체수 1.4배 증가 (최소 50ms까지 단축)
+      // 5초마다 스폰 주기 단축
       if (timeElapsed > 0 && timeElapsed % 5 === 0) {
         currentSpawnInterval = Math.max(50, currentSpawnInterval / 1.4);
       }
